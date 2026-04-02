@@ -35,7 +35,57 @@ type Lang = 'ar' | 'he'
 const SERVICE_KEYS = ['pregnancy_followup', 'blood_tests', 'general_consultation', 'other_services'] as const
 type ServiceKey = (typeof SERVICE_KEYS)[number]
 
-const he = {
+type TranslationsShape = {
+  adminTooltip: string
+  backToBooking: string
+  bookingTitle: string
+  bookingSubtitle: string
+  dateLabel: string
+  thursdayNote: string
+  timeLabel: string
+  timePlaceholder: string
+  serviceLabel: string
+  servicePlaceholder: string
+  serviceOptions: Record<ServiceKey, string>
+  nameLabel: string
+  namePlaceholder: string
+  phoneLabel: string
+  phonePlaceholder: string
+  bookNow: string
+  thursdayAlert: string
+  successBooked: string
+  slotTaken: string
+  waitAuth: string
+  notSignedIn: string
+  authOpNotAllowed: string
+  authErrorPrefix: string
+  authErrorGeneric: string
+  bookingErrorPrefix: string
+  loading: string
+  adminLoginTitle: string
+  passwordPlaceholder: string
+  loginButton: string
+  dashboardTitle: string
+  todayTab: string
+  upcomingTab: string
+  completedTab: string
+  searchPlaceholder: string
+  noneFound: string
+  confirmDelete: string
+  markDone: string
+  deleteAppointment: string
+  footer: string
+  errors: {
+    permissionDenied: string
+    unauthenticated: string
+    failedPrecondition: string
+    resourceExhausted: string
+    firebasePrefix: string
+    unknown: string
+  }
+}
+
+const he: TranslationsShape = {
   adminTooltip: 'ניהול מערכת',
   backToBooking: 'חזרה לזימון',
   bookingTitle: 'זימון תור חדש',
@@ -51,7 +101,7 @@ const he = {
     blood_tests: 'בדיקות דם',
     general_consultation: 'ייעוץ כללי',
     other_services: 'שירותים נוספים',
-  } as const satisfies Record<ServiceKey, string>,
+  },
   nameLabel: 'שם מלא',
   namePlaceholder: 'ישראל ישראלית',
   phoneLabel: 'מספר טלפון',
@@ -88,9 +138,9 @@ const he = {
     firebasePrefix: 'שגיאת Firebase:',
     unknown: 'שגיאה לא ידועה',
   },
-} as const
+}
 
-const ar: typeof he = {
+const ar: TranslationsShape = {
   adminTooltip: 'إدارة النظام',
   backToBooking: 'العودة للحجز',
   bookingTitle: 'حجز موعد جديد',
@@ -145,8 +195,8 @@ const ar: typeof he = {
   },
 }
 
-const translations = { he, ar } as const
-type T = typeof he
+const translations: Record<Lang, TranslationsShape> = { he, ar }
+type T = TranslationsShape
 
 type AppointmentStatus = 'upcoming' | 'completed' | 'cancelled'
 
