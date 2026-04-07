@@ -27,15 +27,24 @@ import { auth, db } from './firebase'
 
 const ADMIN_PASSWORD = 'admin123'
 const WORK_DAY_INDEX = 4
-const START_HOUR = 8
-const END_HOUR = 17
+const START_MINUTES = 16 * 60
+const END_MINUTES = 18 * 60 + 30
+const SLOT_STEP_MINUTES = 30
 
 type Lang = 'ar' | 'he'
 
-const SERVICE_KEYS = ['pregnancy_followup', 'blood_tests', 'general_consultation', 'other_services'] as const
+const SERVICE_KEYS = ['ultrasound', 'iud', 'pregnancy_exam', 'pregnancy_followup', 'lab_tests'] as const
 type ServiceKey = (typeof SERVICE_KEYS)[number]
 
 type TranslationsShape = {
+  clinicName: string
+  clinicSubtitle: string
+  clinicServicesTitle: string
+  clinicServicesList: string[]
+  clinicReceptionDaysLabel: string
+  clinicReceptionDaysValue: string
+  clinicWorkingHoursLabel: string
+  clinicWorkingHoursValue: string
   adminTooltip: string
   backToBooking: string
   bookingTitle: string
@@ -53,6 +62,7 @@ type TranslationsShape = {
   phonePlaceholder: string
   bookNow: string
   thursdayAlert: string
+  timeRangeAlert: string
   successBooked: string
   slotTaken: string
   waitAuth: string
@@ -86,6 +96,20 @@ type TranslationsShape = {
 }
 
 const he: TranslationsShape = {
+  clinicName: 'המרכז הרפואי תל שבע ',
+  clinicSubtitle: 'מרפאת נשים מומחית',
+  clinicServicesTitle: 'השירותים הניתנים במרפאה:',
+  clinicServicesList: [
+    'אולטרסאונד צבעוני (U/S)',
+    'התקנת התקן תוך רחמי למניעת הריון',
+    'בדיקת הריון מקיפה',
+    'מעקב וטיפול מלא לאורך כל ההריון',
+    'בדיקות דם, שתן וסוכר',
+  ],
+  clinicReceptionDaysLabel: 'ימי קבלה:',
+  clinicReceptionDaysValue: 'חמישי',
+  clinicWorkingHoursLabel: 'שעות עבודה:',
+  clinicWorkingHoursValue: '16:00 - 18:30',
   adminTooltip: 'ניהול מערכת',
   backToBooking: 'חזרה לזימון',
   bookingTitle: 'זימון תור חדש',
@@ -97,10 +121,11 @@ const he: TranslationsShape = {
   serviceLabel: 'סיבת התור',
   servicePlaceholder: 'בחרי שירות...',
   serviceOptions: {
-    pregnancy_followup: 'מעקב הריון',
-    blood_tests: 'בדיקות דם',
-    general_consultation: 'ייעוץ כללי',
-    other_services: 'שירותים נוספים',
+    ultrasound: 'אולטרסאונד צבעוני (U/S)',
+    iud: 'התקנת התקן תוך רחמי',
+    pregnancy_exam: 'בדיקת הריון מקיפה',
+    pregnancy_followup: 'מעקב וטיפול בהריון',
+    lab_tests: 'בדיקות דם/שתן/סוכר',
   },
   nameLabel: 'שם מלא',
   namePlaceholder: 'ישראל ישראלית',
@@ -108,6 +133,7 @@ const he: TranslationsShape = {
   phonePlaceholder: '050-0000000',
   bookNow: 'קבעי תור עכשיו',
   thursdayAlert: 'מרפאה פעילה בימי חמישי בלבד.',
+  timeRangeAlert: 'ניתן לקבוע תור רק בין 16:00 ל-18:30 (כל חצי שעה).',
   successBooked: 'התור נקבע בהצלחה! נתראה בקרוב.',
   slotTaken: 'השעה הזו כבר נתפסה. בחרי שעה אחרת.',
   waitAuth: 'ממתין להתחברות... נסי שוב בעוד רגע',
@@ -141,6 +167,20 @@ const he: TranslationsShape = {
 }
 
 const ar: TranslationsShape = {
+  clinicName: 'المركز الطبي تل السبع',
+  clinicSubtitle: 'عيادة نسائية متخصصة',
+  clinicServicesTitle: 'نقدّم الخدمات التالية:',
+  clinicServicesList: [
+    'تصوير تلفزيوني ملوّن (U/S)',
+    'تركيب لولب لمنع الحمل',
+    'فحص حمل شامل',
+    'متابعة وعناية متكاملة طوال فترة الحمل',
+    'فحوصات دم، بول، وسكر',
+  ],
+  clinicReceptionDaysLabel: 'أيام الاستقبال:',
+  clinicReceptionDaysValue: 'الخميس',
+  clinicWorkingHoursLabel: 'ساعات العمل:',
+  clinicWorkingHoursValue: '16:00 - 18:30',
   adminTooltip: 'إدارة النظام',
   backToBooking: 'العودة للحجز',
   bookingTitle: 'حجز موعد جديد',
@@ -152,10 +192,11 @@ const ar: TranslationsShape = {
   serviceLabel: 'سبب الموعد',
   servicePlaceholder: 'اختاري خدمة...',
   serviceOptions: {
-    pregnancy_followup: 'متابعة الحمل',
-    blood_tests: 'فحوصات دم',
-    general_consultation: 'استشارة عامة',
-    other_services: 'خدمات أخرى',
+    ultrasound: 'تصوير تلفزيوني ملوّن (U/S)',
+    iud: 'تركيب لولب لمنع الحمل',
+    pregnancy_exam: 'فحص حمل شامل',
+    pregnancy_followup: 'متابعة وعناية متكاملة طوال فترة الحمل',
+    lab_tests: 'فحوصات دم، بول، وسكر',
   },
   nameLabel: 'الاسم الكامل',
   namePlaceholder: 'مثال: سارة أحمد',
@@ -163,6 +204,7 @@ const ar: TranslationsShape = {
   phonePlaceholder: '050-0000000',
   bookNow: 'احجزي الموعد الآن',
   thursdayAlert: 'العيادة تعمل يوم الخميس فقط.',
+  timeRangeAlert: 'يمكن حجز موعد فقط بين 16:00 و 18:30 (كل 30 دقيقة).',
   successBooked: 'تم حجز الموعد بنجاح! نراك قريبًا.',
   slotTaken: 'هذه الساعة محجوزة. اختاري ساعة أخرى.',
   waitAuth: 'جاري تسجيل الدخول... حاولي بعد لحظة',
@@ -221,6 +263,27 @@ function formatLocalDateISO(d: Date) {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
+}
+
+function isThursdayDate(dateString: string) {
+  const d = parseIsoDateLocal(dateString)
+  return d.getDay() === WORK_DAY_INDEX
+}
+
+function timeToMinutes(time: string) {
+  const [hStr, mStr] = time.split(':')
+  const h = Number(hStr)
+  const m = Number(mStr)
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return NaN
+  return h * 60 + m
+}
+
+function isValidClinicSlot(date: string, time: string) {
+  if (!isThursdayDate(date)) return false
+  const minutesOfDay = timeToMinutes(time)
+  if (!Number.isFinite(minutesOfDay)) return false
+  if (minutesOfDay < START_MINUTES || minutesOfDay > END_MINUTES) return false
+  return (minutesOfDay - START_MINUTES) % SLOT_STEP_MINUTES === 0
 }
 
 function slotId(date: string, time: string) {
@@ -321,6 +384,12 @@ export default function App() {
   }
 
   const handleAddAppointment = async (appointmentData: Omit<Appointment, 'id' | 'status' | 'createdAt'>) => {
+    if (!isValidClinicSlot(appointmentData.date, appointmentData.time)) {
+      if (!isThursdayDate(appointmentData.date)) showMessage(t.thursdayAlert, 'error')
+      else showMessage(t.timeRangeAlert, 'error')
+      return
+    }
+
     if (!authReady) {
       showMessage(t.waitAuth, 'error')
       return
@@ -389,8 +458,8 @@ export default function App() {
             <Stethoscope size={24} />
           </div>
           <div>
-            <h1 className="font-bold text-lg leading-tight text-rose-700">ד"ר לוי</h1>
-            <p className="text-xs text-slate-500">רופאת נשים מומחית</p>
+            <h1 className="font-bold text-lg leading-tight text-rose-700">{t.clinicName}</h1>
+            <p className="text-xs text-slate-500">{t.clinicSubtitle}</p>
           </div>
         </div>
 
@@ -464,7 +533,7 @@ export default function App() {
 
       <footer className="py-8 text-center text-slate-400 text-sm border-t border-slate-200">
         <p>
-          © {new Date().getFullYear()} מרפאת ד"ר לוי - {t.footer}
+          © {new Date().getFullYear()} {t.clinicName} - {t.footer}
         </p>
       </footer>
     </div>
@@ -490,11 +559,6 @@ function BookingForm({
 
   const [availableTimes, setAvailableTimes] = useState<string[]>([])
 
-  const isThursday = (dateString: string) => {
-    const d = parseIsoDateLocal(dateString)
-    return d.getDay() === WORK_DAY_INDEX
-  }
-
   const minDate = () => {
     const d = new Date()
     d.setDate(d.getDate() + 1)
@@ -508,23 +572,27 @@ function BookingForm({
     }
 
     const times: string[] = []
-    for (let h = START_HOUR; h <= END_HOUR; h++) {
-      const minutes = h === END_HOUR ? ['00'] : ['00', '30']
-      for (const m of minutes) {
-        const timeStr = `${String(h).padStart(2, '0')}:${m}`
-        const taken = appointments.some(
-          (app) => app.date === formData.date && app.time === timeStr && app.status !== 'cancelled',
-        )
-        if (!taken) times.push(timeStr)
-      }
+    for (let minutesOfDay = START_MINUTES; minutesOfDay <= END_MINUTES; minutesOfDay += SLOT_STEP_MINUTES) {
+      const h = Math.floor(minutesOfDay / 60)
+      const m = minutesOfDay % 60
+      const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+      const taken = appointments.some(
+        (app) => app.date === formData.date && app.time === timeStr && app.status !== 'cancelled',
+      )
+      if (!taken) times.push(timeStr)
     }
     setAvailableTimes(times)
   }, [formData.date, appointments])
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (!isThursday(formData.date)) {
+    if (!isThursdayDate(formData.date)) {
       window.alert(t.thursdayAlert)
+      return
+    }
+
+    if (!isValidClinicSlot(formData.date, formData.time)) {
+      window.alert(t.timeRangeAlert)
       return
     }
 
@@ -540,111 +608,115 @@ function BookingForm({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl shadow-rose-100/50 border border-rose-50 overflow-hidden">
-      <div className="bg-rose-600 p-6 text-white">
-        <h2 className="text-2xl font-bold mb-1">{t.bookingTitle}</h2>
-        <p className="text-rose-100 opacity-90">{t.bookingSubtitle}</p>
-      </div>
+    <div className="space-y-6">
+   
 
-      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <Calendar size={16} className="text-rose-500" />
-              {t.dateLabel}
-            </label>
-            <input
-              type="date"
-              required
-              min={minDate()}
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value, time: '' })}
-              className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
-            />
-            {formData.date && !isThursday(formData.date) ? (
-              <p className="text-rose-500 text-xs mt-1">{t.thursdayNote}</p>
-            ) : null}
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <Clock size={16} className="text-rose-500" />
-              {t.timeLabel}
-            </label>
-            <select
-              required
-              disabled={!formData.date || !isThursday(formData.date)}
-              value={formData.time}
-              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all disabled:opacity-50"
-            >
-              <option value="">{t.timePlaceholder}</option>
-              {availableTimes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <Stethoscope size={16} className="text-rose-500" />
-              {t.serviceLabel}
-            </label>
-            <select
-              required
-              value={formData.service}
-              onChange={(e) => setFormData({ ...formData, service: e.target.value as ServiceKey })}
-              className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
-            >
-              <option value="">{t.servicePlaceholder}</option>
-              {SERVICE_KEYS.map((key) => (
-                <option key={key} value={key}>
-                  {t.serviceOptions[key]}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <User size={16} className="text-rose-500" />
-              {t.nameLabel}
-            </label>
-            <input
-              type="text"
-              required
-              placeholder={t.namePlaceholder}
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <Phone size={16} className="text-rose-500" />
-              {t.phoneLabel}
-            </label>
-            <input
-              type="tel"
-              required
-              placeholder={t.phonePlaceholder}
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
-            />
-          </div>
+      <div className="bg-white rounded-2xl shadow-xl shadow-rose-100/50 border border-rose-50 overflow-hidden">
+        <div className="bg-rose-600 p-6 text-white">
+          <h2 className="text-2xl font-bold mb-1">{t.bookingTitle}</h2>
+          <p className="text-rose-100 opacity-90">{t.bookingSubtitle}</p>
         </div>
 
-        <button
-          type="submit"
-          className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-rose-200 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
-        >
-          {t.bookNow}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Calendar size={16} className="text-rose-500" />
+                {t.dateLabel}
+              </label>
+              <input
+                type="date"
+                required
+                min={minDate()}
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value, time: '' })}
+                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
+              />
+              {formData.date && !isThursdayDate(formData.date) ? (
+                <p className="text-rose-500 text-xs mt-1">{t.thursdayNote}</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Clock size={16} className="text-rose-500" />
+                {t.timeLabel}
+              </label>
+              <select
+                required
+                disabled={!formData.date || !isThursdayDate(formData.date)}
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all disabled:opacity-50"
+              >
+                <option value="">{t.timePlaceholder}</option>
+                {availableTimes.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Stethoscope size={16} className="text-rose-500" />
+                {t.serviceLabel}
+              </label>
+              <select
+                required
+                value={formData.service}
+                onChange={(e) => setFormData({ ...formData, service: e.target.value as ServiceKey })}
+                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
+              >
+                <option value="">{t.servicePlaceholder}</option>
+                {SERVICE_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t.serviceOptions[key]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <User size={16} className="text-rose-500" />
+                {t.nameLabel}
+              </label>
+              <input
+                type="text"
+                required
+                placeholder={t.namePlaceholder}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Phone size={16} className="text-rose-500" />
+                {t.phoneLabel}
+              </label>
+              <input
+                type="tel"
+                required
+                placeholder={t.phonePlaceholder}
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-rose-200 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+          >
+            {t.bookNow}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }
